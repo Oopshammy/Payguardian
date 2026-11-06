@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PayGuardian | Autonomous Revenue Recovery & Dispute Arbitration Copilot</title>
+  <style>
+    :root {
+      --bg-base: #090d16;
+      --bg-surface: #0f172a;
+      --bg-surface-elevated: #1e293b;
+      --border-color: #334155;
+      --border-focus: #6366f1;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.12);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.12);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.12);
+      --purple: #a855f7;
+      --purple-bg: rgba(168, 85, 247, 0.12);
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    header {
+      background-color: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #ffffff, #c7d2fe);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .badge-pulse {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--success);
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+      70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    main {
+      flex: 1;
+      width: 100%;
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: 480px 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 1080px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .card:last-child {
+      margin-bottom: 0;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-icon {
+      font-size: 1.35rem;
+      padding: 0.4rem;
+      background: var(--bg-surface-elevated);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .card-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    .form-group {
+      margin-bottom: 0.85rem;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    input, select {
+      width: 100%;
+      background: var(--bg-base);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.55rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.825rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+    }
+
+    .btn {
+      width: 100%;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: background-color 0.15s, transform 0.05s;
+    }
+
+    .btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn:active {
+      transform: scale(0.99);
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: #273549;
+    }
+
+    .btn-sm {
+      padding: 0.35rem 0.7rem;
+      font-size: 0.75rem;
+      width: auto;
+    }
+
+    .feed-container {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .feed-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.85rem;
+      margin-bottom: 1rem;
+    }
+
+    .feed-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .feed-count {
+      background: var(--bg-surface-elevated);
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      border: 1px solid var(--border-color);
+    }
+
+    .feed-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      overflow-y: auto;
+      max-height: calc(100vh - 190px);
+      padding-right: 0.25rem;
+    }
+
+    .feed-item {
+      background: var(--bg-base);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1rem;
+      transition: border-color 0.15s, transform 0.15s;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .feed-item:hover {
+      border-color: #475569;
+    }
+
+    .feed-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-billing {
+      background: var(--purple-bg);
+      color: var(--purple);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    .badge-dispute {
+      background: var(--warning-bg);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-status {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-failed {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .item-time {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+
+    .item-summary {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 0.45rem;
+    }
+
+    .rationale-box {
+      background: rgba(99, 102, 241, 0.08);
+      border-left: 3px solid var(--primary);
+      border-radius: 0 6px 6px 0;
+      padding: 0.55rem 0.75rem;
+      margin: 0.55rem 0;
+      font-size: 0.75rem;
+      color: #e2e8f0;
+      line-height: 1.45;
+    }
+
+    .rationale-title {
+      font-weight: 600;
+      color: #a5b4fc;
+      margin-bottom: 0.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .item-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.6rem;
+      margin-top: 0.6rem;
+      padding-top: 0.45rem;
+      border-top: 1px dashed rgba(51, 65, 85, 0.6);
+    }
+
+    .invoice-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      text-decoration: none;
+      transition: background-color 0.15s, border-color 0.15s;
+    }
+
+    .invoice-link:hover {
+      background: rgba(16, 185, 129, 0.25);
+      border-color: #34d399;
+    }
+
+    .empty-state {
+      padding: 3rem 1.5rem;
+      text-align: center;
+      color: var(--text-dim);
+    }
+
+    .empty-icon {
+      font-size: 2.25rem;
+      margin-bottom: 0.6rem;
+      opacity: 0.7;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #ffffff;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🛡️</div>
+      <div>
+        <div class="brand-title">PayGuardian</div>
+        <div class="brand-subtitle">Autonomous Pre-Chargeback Dispute Arbitration & Revenue Recovery Copilot</div>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="badge-pulse">
+        <span class="pulse-dot"></span>
+        PayPal Sandbox Live
+      </div>
+    </div>
+  </header>
+
+  <!-- Split Screen Container -->
+  <main>
+    <!-- Left Column: Simulation Triggers -->
+    <section>
+      <!-- Scenario A Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">💳</div>
+          <div>
+            <div class="card-title">Scenario A: Failed Subscription Recovery</div>
+            <div class="card-desc">Calculates churn risk via Gemini, computes loyalty discount, and issues PayPal invoice.</div>
+          </div>
+        </div>
+
+        <form id="form-billing">
+          <div class="form-group">
+            <label for="sub-email">Customer Email</label>
+            <input type="email" id="sub-email" required value="premium-client@example.com" placeholder="name@domain.com">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="sub-amount">Base Amount (USD)</label>
+              <input type="number" id="sub-amount" required step="0.01" min="1" value="79.00">
+            </div>
+            <div class="form-group">
+              <label for="sub-tenure">Tenure (Months)</label>
+              <input type="number" id="sub-tenure" required min="1" max="120" value="16">
+            </div>
+          </div>
+          <button type="submit" id="btn-sub-submit" class="btn">
+            <span>⚡ Trigger Autonomous Churn Recovery</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Scenario B Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">⚖️</div>
+          <div>
+            <div class="card-title">Scenario B: Pre-Chargeback Dispute Inquiry</div>
+            <div class="card-desc">Evaluates inquiry risks, drafts mitigation strategy, and offers instant partial settlement.</div>
+          </div>
+        </div>
+
+        <form id="form-dispute">
+          <div class="form-group">
+            <label for="disp-id">Dispute ID</label>
+            <input type="text" id="disp-id" required value="PP-D-78192" placeholder="PP-D-XXXXX">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="disp-amount">Disputed Amount (USD)</label>
+              <input type="number" id="disp-amount" required step="0.01" min="1" value="120.00">
+            </div>
+            <div class="form-group">
+              <label for="disp-reason">Dispute Reason</label>
+              <select id="disp-reason">
+                <option value="MERCHANDISE_OR_SERVICE_NOT_RECEIVED">Item Not Received</option>
+                <option value="MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED">Significantly Not as Described</option>
+                <option value="UNAUTHORISED_TRANSACTION">Unauthorized Transaction</option>
+                <option value="CANCELED_RECURRING_BILLING">Canceled Subscription Dispute</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" id="btn-disp-submit" class="btn">
+            <span>🎯 Propose Autonomous Settlement Offer</span>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Right Column: Real-time Live Operations Feed -->
+    <section class="feed-container">
+      <div class="feed-header">
+        <div class="feed-title-wrap">
+          <h2 style="font-size: 0.95rem; font-weight: 600;">Live Operations & Audit Feed</h2>
+          <span class="feed-count" id="feed-count">0 Events</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <span style="font-size: 0.7rem; color: var(--text-dim);" id="poll-indicator">Polling active (3s)</span>
+          <button class="btn btn-secondary btn-sm" id="btn-manual-refresh" title="Refresh Now">↻</button>
+        </div>
+      </div>
+
+      <div class="feed-list" id="feed-list">
+        <div class="empty-state">
+          <div class="empty-icon">📡</div>
+          <div style="font-weight: 500; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">Waiting for Telemetry Events</div>
+          <div style="font-size: 0.75rem;">Trigger a simulation scenario on the left or send a PayPal webhook to view live arbitration logs.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = window.location.origin;
+
+    const feedList = document.getElementById('feed-list');
+    const feedCount = document.getElementById('feed-count');
+    const btnManualRefresh = document.getElementById('btn-manual-refresh');
+    const formBilling = document.getElementById('form-billing');
+    const formDispute = document.getElementById('form-dispute');
+    const btnSubSubmit = document.getElementById('btn-sub-submit');
+    const btnDispSubmit = document.getElementById('btn-disp-submit');
+
+    let previousEventsJson = '';
+
+    // Format ISO timestamp nicely
+    function formatTime(isoString) {
+      if (!isoString) return '';
+      try {
+        const date = new Date(isoString);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      } catch (e) {
+        return isoString;
+      }
+    }
+
+    // Render operations feed
+    function renderFeed(events) {
+      if (!events || events.length === 0) {
+        feedList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📡</div>
+            <div style="font-weight: 500; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">No Events Recorded Yet</div>
+            <div style="font-size: 0.75rem;">Run Scenario A or B to trigger copilot workflows and view telemetry.</div>
+          </div>
+        `;
+        feedCount.textContent = '0 Events';
+        return;
+      }
+
+      feedCount.textContent = `${events.length} Event${events.length === 1 ? '' : 's'}`;
+
+      feedList.innerHTML = events.map(evt => {
+        const isDispute = evt.event_type.includes('DISPUTE');
+        const badgeClass = isDispute ? 'badge-dispute' : 'badge-billing';
+        const badgeLabel = isDispute ? '⚖️ Dispute Arbitration' : '💳 Subscription Recovery';
+        const statusClass = evt.status === 'FAILED' ? 'badge-failed' : 'badge-status';
+
+        return `
+          <div class="feed-item">
+            <div class="feed-item-top">
+              <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                <span class="badge ${badgeClass}">${badgeLabel}</span>
+                <span class="badge ${statusClass}">${evt.status}</span>
+              </div>
+              <span class="item-time">${formatTime(evt.timestamp)}</span>
+            </div>
+
+            <div class="item-summary">${escapeHtml(evt.summary)}</div>
+
+            ${evt.ai_rationale ? `
+              <div class="rationale-box">
+                <div class="rationale-title">✨ Gemini Copilot Reasoning</div>
+                <div>${escapeHtml(evt.ai_rationale)}</div>
+              </div>
+            ` : ''}
+
+            ${evt.payer_view_url ? `
+              <div class="item-actions">
+                <a href="${evt.payer_view_url}" target="_blank" rel="noopener noreferrer" class="invoice-link">
+                  Open Sandbox Invoice ↗
+                </a>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Poll /api/events
+    async function fetchEvents() {
+      try {
+        const res = await fetch(`${API_BASE}/api/events`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const currentJson = JSON.stringify(data.events);
+        if (currentJson !== previousEventsJson) {
+          previousEventsJson = currentJson;
+          renderFeed(data.events);
+        }
+      } catch (err) {
+        console.error('Failed to poll events:', err);
+      }
+    }
+
+    // Trigger Scenario A: Failed Subscription
+    formBilling.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const originalText = btnSubSubmit.innerHTML;
+      btnSubSubmit.innerHTML = `<span class="spinner"></span> Processing Recovery...`;
+      btnSubSubmit.disabled = true;
+
+      const payload = {
+        email: document.getElementById('sub-email').value,
+        amount: parseFloat(document.getElementById('sub-amount').value),
+        tenure_months: parseInt(document.getElementById('sub-tenure').value, 10),
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/simulate/failed-billing`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        await fetchEvents();
+      } catch (err) {
+        console.error(err);
+        alert('Simulation error: ' + err.message);
+      } finally {
+        btnSubSubmit.innerHTML = originalText;
+        btnSubSubmit.disabled = false;
+      }
+    });
+
+    // Trigger Scenario B: Dispute Inquiry
+    formDispute.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const originalText = btnDispSubmit.innerHTML;
+      btnDispSubmit.innerHTML = `<span class="spinner"></span> Evaluating Settlement...`;
+      btnDispSubmit.disabled = true;
+
+      const payload = {
+        dispute_id: document.getElementById('disp-id').value,
+        amount: parseFloat(document.getElementById('disp-amount').value),
+        reason: document.getElementById('disp-reason').value,
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/simulate/dispute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        await fetchEvents();
+      } catch (err) {
+        console.error(err);
+        alert('Simulation error: ' + err.message);
+      } finally {
+        btnDispSubmit.innerHTML = originalText;
+        btnDispSubmit.disabled = false;
+      }
+    });
+
+    btnManualRefresh.addEventListener('click', () => {
+      fetchEvents();
+    });
+
+    // Start 3-second polling
+    fetchEvents();
+    setInterval(fetchEvents, 3000);
+  </script>
+</body>
+</html>
