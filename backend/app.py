@@ -44,6 +44,7 @@ class DisputeSimulateRequest(BaseModel):
     dispute_id: str
     amount: float
     reason: str
+    offer_type: Optional[str] = "AUTO"
 
 
 def record_log(
@@ -100,6 +101,19 @@ def get_events():
     return {"events": audit_logs}
 
 
+@app.delete("/api/events")
+def clear_events():
+    """Clear all in-memory audit logs."""
+    audit_logs.clear()
+    return {"status": "cleared", "total_events": 0}
+
+
+@app.get("/api/logs")
+def get_logs():
+    """Direct audit log list endpoint for project doc specification compatibility."""
+    return audit_logs
+
+
 @app.post("/api/simulate/failed-billing")
 def simulate_failed_billing(req: FailedBillingSimulateRequest):
     """
@@ -118,13 +132,14 @@ def simulate_failed_billing(req: FailedBillingSimulateRequest):
         ai_eval = result.get("ai_evaluation", {})
         recovery_inv = result.get("recovery_invoice", {})
         discount_pct = ai_eval.get("discount_percent", 0.0)
+        discounted_amt = recovery_inv.get("discounted_amount", req.amount)
         payer_view_url = recovery_inv.get("payer_view_url")
 
         record_log(
             event_type="BILLING_PAYMENT_FAILED",
             status="RECOVERED",
-            summary=f"Dispatched {discount_pct:.1f}% discount invoice to {req.email} (${req.amount:.2f} base)",
-            ai_rationale=ai_eval.get("rationale", "Loyalty recovery strategy."),
+            summary=f"AI Copilot: Evaluated subscriber tenure ({req.tenure_months} months), assigned {discount_pct:.1f}% retention discount (${discounted_amt:.2f} renewal for {req.email})",
+            ai_rationale=ai_eval.get("rationale", f"AI Copilot: Evaluated subscriber tenure ({req.tenure_months} months), assigned a {discount_pct:.1f}% retention discount."),
             payer_view_url=payer_view_url,
             details=result,
         )
@@ -152,18 +167,25 @@ def simulate_dispute(req: DisputeSimulateRequest):
             dispute_id=req.dispute_id,
             disputed_amount=req.amount,
             reason=req.reason,
+            preferred_offer_type=req.offer_type,
             paypal_client=paypal_client,
         )
 
         ai_eval = result.get("ai_evaluation", {})
+        offer_type = ai_eval.get("offer_type", "REFUND")
         settlement_amt = ai_eval.get("settlement_amount", 0.0)
         settlement_pct = ai_eval.get("settlement_percent", 0.0)
+
+        if offer_type == "REPLACEMENT_WITHOUT_REFUND":
+            summary = f"AI Copilot: Assessed inquiry risk ({ai_eval.get('risk_score', 50)}/100), dispatched REPLACEMENT_WITHOUT_REFUND on case {req.dispute_id} (100% Cash Retained)"
+        else:
+            summary = f"AI Copilot: Assessed inquiry risk ({ai_eval.get('risk_score', 65)}/100), offered {settlement_pct:.0f}% settlement refund (${settlement_amt:.2f} on case {req.dispute_id})"
 
         record_log(
             event_type="CUSTOMER_DISPUTE_INQUIRY",
             status="SETTLEMENT_OFFERED",
-            summary=f"Offered ${settlement_amt:.2f} ({settlement_pct:.0f}%) refund settlement on {req.dispute_id}",
-            ai_rationale=ai_eval.get("rationale", "Pre-chargeback dispute mitigation."),
+            summary=summary,
+            ai_rationale=ai_eval.get("rationale", "Pre-chargeback inquiry risk mitigation: settling proactively eliminates fixed merchant dispute penalty fees."),
             payer_view_url=None,
             details=result,
         )
@@ -210,11 +232,13 @@ def process_webhook_event(payload: Dict[str, Any]):
             )
             ai_eval = res.get("ai_evaluation", {})
             recovery_inv = res.get("recovery_invoice", {})
+            discount_pct = ai_eval.get("discount_percent", 17.5)
+            discounted_amt = recovery_inv.get("discounted_amount", round(amount * (1.0 - discount_pct / 100.0), 2))
             record_log(
                 event_type=event_type,
                 status="PROCESSED",
-                summary=f"Automated recovery invoice generated for {email} (${amount:.2f})",
-                ai_rationale=ai_eval.get("rationale", "Webhook autonomous recovery."),
+                summary=f"AI Copilot: Evaluated subscriber tenure ({tenure} months), assigned {discount_pct:.1f}% retention discount (${discounted_amt:.2f} renewal for {email})",
+                ai_rationale=ai_eval.get("rationale", f"AI Copilot: Evaluated subscriber tenure ({tenure} months), assigned a {discount_pct:.1f}% retention discount."),
                 payer_view_url=recovery_inv.get("payer_view_url"),
                 details=res,
             )
@@ -247,11 +271,20 @@ def process_webhook_event(payload: Dict[str, Any]):
                 paypal_client=paypal_client,
             )
             ai_eval = res.get("ai_evaluation", {})
+            wh_offer_type = ai_eval.get("offer_type", "REFUND")
+            settle_pct = ai_eval.get("settlement_percent", 40.0)
+            settle_amt = ai_eval.get("settlement_amount", round(amount * settle_pct / 100.0, 2))
+
+            if wh_offer_type == "REPLACEMENT_WITHOUT_REFUND":
+                wh_summary = f"AI Copilot: Assessed inquiry risk ({ai_eval.get('risk_score', 50)}/100), dispatched REPLACEMENT_WITHOUT_REFUND on case {dispute_id} (100% Cash Retained)"
+            else:
+                wh_summary = f"AI Copilot: Assessed inquiry risk ({ai_eval.get('risk_score', 65)}/100), offered {settle_pct:.0f}% settlement refund (${settle_amt:.2f} on case {dispute_id})"
+
             record_log(
                 event_type=event_type,
-                status="PROCESSED",
-                summary=f"Automated dispute arbitration settlement offer submitted for {dispute_id}",
-                ai_rationale=ai_eval.get("rationale", "Webhook autonomous dispute mitigation."),
+                status="SETTLEMENT_OFFERED",
+                summary=wh_summary,
+                ai_rationale=ai_eval.get("rationale", "Pre-chargeback inquiry risk mitigation: settling proactively eliminates fixed merchant dispute penalty fees."),
                 payer_view_url=None,
                 details=res,
             )
@@ -272,6 +305,7 @@ def process_webhook_event(payload: Dict[str, Any]):
 
 
 @app.post("/api/paypal/webhook")
+@app.post("/api/webhook")
 async def paypal_webhook(request: Request, background_tasks: BackgroundTasks):
     """
     Handle PayPal Sandbox webhooks asynchronously.
@@ -288,3 +322,66 @@ async def paypal_webhook(request: Request, background_tasks: BackgroundTasks):
         "event_type": payload.get("event_type", "UNKNOWN"),
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
+
+class TriggerPayload(BaseModel):
+    event_type: str
+    email: Optional[str] = "customer@example.com"
+    amount: Optional[str] = "29.99"
+    dispute_id: Optional[str] = "PP-D-12345"
+
+
+@app.post("/api/trigger")
+async def handle_manual_trigger(payload: TriggerPayload, background_tasks: BackgroundTasks):
+    """Manual trigger compatibility endpoint as defined in project doc."""
+    mock_payload = {
+        "event_type": payload.event_type,
+        "email": payload.email,
+        "dispute_id": payload.dispute_id,
+        "resource": {
+            "amount": {"total": payload.amount},
+            "dispute_amount": {"value": payload.amount},
+            "subscriber": {"email_address": payload.email},
+            "reason": "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
+        },
+    }
+    background_tasks.add_task(process_webhook_event, mock_payload)
+    return {"status": "QUEUED", "event_type": payload.event_type}
+
+
+class CloudSimulateRequest(BaseModel):
+    event_type: str = "BILLING.SUBSCRIPTION.PAYMENT.FAILED"
+
+
+@app.get("/api/webhook/status")
+def get_webhook_status():
+    """Retrieve active PayPal Sandbox webhook registration and tunnel status."""
+    try:
+        webhooks = paypal_client.get_registered_webhooks()
+        return {
+            "status": "connected" if webhooks else "disconnected",
+            "active_webhooks": webhooks,
+            "total_webhooks": len(webhooks),
+            "primary_url": webhooks[0]["url"] if webhooks else None,
+            "webhook_id": webhooks[0]["id"] if webhooks else None,
+        }
+    except Exception as exc:
+        return {
+            "status": "error",
+            "error": str(exc),
+            "active_webhooks": [],
+            "total_webhooks": 0,
+        }
+
+
+@app.post("/api/webhook/simulate-cloud")
+def simulate_cloud_event(req: CloudSimulateRequest):
+    """
+    Trigger an official synthetic test event directly from PayPal Sandbox cloud simulator.
+    PayPal will send the webhook across the public internet to PayGuardian.
+    """
+    try:
+        res = paypal_client.simulate_cloud_webhook(event_type=req.event_type)
+        return res
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to dispatch PayPal cloud simulation: {str(exc)}")
