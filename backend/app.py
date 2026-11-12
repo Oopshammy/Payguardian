@@ -92,6 +92,13 @@ def health():
         "project": "PayGuardian",
         "status": "online",
         "total_events": len(audit_logs),
+        "env_diagnostics": {
+            "paypal_client_id_len": len(paypal_client.client_id),
+            "paypal_client_id_preview": (paypal_client.client_id[:4] + "...") if paypal_client.client_id else "NONE",
+            "paypal_client_secret_len": len(paypal_client.client_secret),
+            "paypal_base_url": paypal_client.base_url,
+            "gemini_api_key_set": bool(os.getenv("GEMINI_API_KEY")),
+        }
     }
 
 
