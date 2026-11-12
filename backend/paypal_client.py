@@ -165,18 +165,24 @@ class PayPalClient:
         get_res.raise_for_status()
         inv_data = get_res.json()
 
-        # Extract payer view URL
+        # Extract payer/recipient view URL from official PayPal Invoicing v2 metadata
         metadata = inv_data.get("detail", {}).get("metadata", {})
-        payer_view_url = metadata.get("payer_view_url")
+        payer_view_url = (
+            metadata.get("recipient_view_url")
+            or metadata.get("payer_view_url")
+            or metadata.get("invoicer_view_url")
+        )
 
         if not payer_view_url:
             for link in inv_data.get("links", []):
-                if link.get("rel") == "payer-view":
+                if link.get("rel") in ("payer-view", "recipient-view"):
                     payer_view_url = link.get("href")
                     break
 
         if not payer_view_url:
-            payer_view_url = f"https://www.sandbox.paypal.com/invoice/payer-view/details/{invoice_id}"
+            # Fallback to standard PayPal Sandbox public invoice preview hash format
+            clean_hash = invoice_id.replace("INV2-", "").replace("-", "")
+            payer_view_url = f"https://www.sandbox.paypal.com/invoice/p/#{clean_hash}"
 
         # Get final amount from invoice data if available
         final_amount = inv_data.get("amount", {}).get("value")
