@@ -385,3 +385,9 @@ def simulate_cloud_event(req: CloudSimulateRequest):
         return res
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to dispatch PayPal cloud simulation: {str(exc)}")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=False)

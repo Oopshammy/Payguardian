@@ -49,6 +49,10 @@ payguardian/
 │   └── .env                # Local secrets (excluded from git)
 ├── frontend/
 │   └── index.html          # Dark-theme cockpit with live ROI ribbon, simulation & audit feed
+├── Dockerfile              # Container definition for multi-cloud deployments
+├── render.yaml             # Render Blueprint for 1-click cloud deployment
+├── railway.json            # Railway deployment configuration
+├── Procfile                # Heroku / Railway / PaaS process file
 ├── .gitignore              # Protects secrets and cached files
 └── README.md
 ```
@@ -61,8 +65,8 @@ payguardian/
 
 Clone and navigate to the backend:
 ```bash
-git clone https://github.com/<YOUR_USERNAME>/payguardian.git
-cd payguardian/backend
+git clone https://github.com/Oopshammy/Payguardian.git
+cd Payguardian/backend
 ```
 
 Create `.env` with your PayPal Sandbox & Gemini credentials:
@@ -86,9 +90,42 @@ Open **`http://127.0.0.1:8000`** in your browser to view the interactive dashboa
 
 ---
 
-## 🌐 Live Webhook Tunneling & Testing
+## ☁️ Cloud Deployment (1-Click & Production)
 
-To receive real incoming events from PayPal Sandbox cloud servers across the internet:
+PayGuardian is fully containerized and pre-configured for free/instant cloud hosting on **Render**, **Railway**, and **Docker**.
+
+### Option A: 1-Click Deploy on Render (Recommended)
+1. Log in to [Render Dashboard](https://dashboard.render.com/) and click **New + > Web Service**.
+2. Connect your GitHub repository: `https://github.com/Oopshammy/Payguardian`.
+3. Configure the service settings:
+   - **Name**: `payguardian`
+   - **Runtime**: `Python`
+   - **Build Command**: `pip install -r backend/requirements.txt`
+   - **Start Command**: `uvicorn app:app --host 0.0.0.0 --port $PORT --app-dir backend`
+4. Under **Environment Variables**, add:
+   - `PAYPAL_CLIENT_ID`: Your PayPal Sandbox App Client ID
+   - `PAYPAL_CLIENT_SECRET`: Your PayPal Sandbox App Secret
+   - `PAYPAL_BASE_URL`: `https://api-m.sandbox.paypal.com`
+   - `GEMINI_API_KEY`: Your Google Gemini API Key
+5. Click **Create Web Service**. Within ~2 minutes, your cockpit is live at `https://payguardian.onrender.com`!
+
+### Option B: Deploy on Railway
+1. In [Railway](https://railway.app/), click **New Project > Deploy from GitHub repo**.
+2. Select `Oopshammy/Payguardian` (Railway detects `Dockerfile` and `railway.json` automatically).
+3. In the Railway service **Variables** tab, paste the 4 environment variables above.
+
+### Connecting Your Live Cloud URL to PayPal Webhooks
+Once your cloud deployment is live, route PayPal Sandbox webhooks directly to your cloud endpoint:
+```bash
+python backend/sync_webhook.py https://<your-cloud-domain>/api/webhook
+```
+Your PayGuardian cockpit will now receive live PayPal events 24/7 without needing local tunnels.
+
+---
+
+## 🌐 Local Webhook Tunneling & Testing
+
+To receive real incoming events from PayPal Sandbox cloud servers locally:
 
 ### 1. Start Tunnel
 ```bash
