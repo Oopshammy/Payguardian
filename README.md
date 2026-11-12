@@ -143,16 +143,3 @@ Run the automated end-to-end test suite:
 python backend/test_live_tunnel.py
 ```
 Or click the **`⚡ Cloud Churn Event`** and **`⚡ Cloud Dispute Event`** buttons right in the Cockpit UI header to dispatch real events from PayPal's Cloud Simulator.
-
----
-
-## 🎬 3-Minute Demo Video Script
-
-- **0:00 - 0:30 | Problem Statement**:
-  *"SaaS businesses lose up to 9% of MRR to passive subscription churn, and dispute fees cost merchants $15 to $25 per chargeback. Traditional email dunning fails and manual dispute resolution takes days. Meet PayGuardian."*
-- **0:30 - 1:30 | Scenario A Demonstration**:
-  *"When a recurring subscription billing fails, PayGuardian instantly intercepts the webhook, evaluates subscriber tenure using Gemini AI, issues an autonomous loyalty retention discount (10–25%), and generates a direct PayPal Invoicing v2 link for friction-free renewal."*
-- **1:30 - 2:30 | Scenario B Demonstration**:
-  *"When a buyer initiates an early inquiry dispute, PayGuardian intervenes before it escalates to a formal chargeback. Gemini assesses risk and submits an automated settlement offer (either a 40% refund or replacement credit) via the PayPal Customer Disputes API—saving the merchant fixed penalty fees."*
-- **2:30 - 3:00 | Impact & ROI**:
-  *"PayGuardian turns payment failures into recoveries in under 2.4 seconds, eliminating 100% of avoidable dispute fees natively on PayPal Sandbox APIs and Gemini."*
