@@ -12,7 +12,15 @@ if os.path.exists(env_path):
 else:
     load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+def clean_env(val: str) -> str:
+    if not val:
+        return ""
+    val = str(val).strip().strip("'\"")
+    if "=" in val and not val.startswith("http"):
+        val = val.split("=", 1)[1].strip().strip("'\"")
+    return val
+
+GEMINI_API_KEY = clean_env(os.getenv("GEMINI_API_KEY", ""))
 # Use the direct stable model identifier
 PRIMARY_MODEL = "gemini-2.0-flash"
 
@@ -20,7 +28,7 @@ default_paypal_client = PayPalClient()
 
 
 def get_genai_client(api_key: str = None) -> genai.Client:
-    key = api_key or os.getenv("GEMINI_API_KEY", "")
+    key = clean_env(api_key or os.getenv("GEMINI_API_KEY", ""))
     if not key:
         raise ValueError("GEMINI_API_KEY is not set.")
     return genai.Client(api_key=key)

@@ -8,18 +8,26 @@ if os.path.exists(env_path):
 else:
     load_dotenv()
 
-PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID", "")
-PAYPAL_CLIENT_SECRET = os.getenv("PAYPAL_CLIENT_SECRET", "")
-PAYPAL_BASE_URL = os.getenv("PAYPAL_BASE_URL", "https://api-m.sandbox.paypal.com")
+def clean_env(val: str) -> str:
+    if not val:
+        return ""
+    val = str(val).strip().strip("'\"")
+    if "=" in val and not val.startswith("http"):
+        val = val.split("=", 1)[1].strip().strip("'\"")
+    return val
+
+PAYPAL_CLIENT_ID = clean_env(os.getenv("PAYPAL_CLIENT_ID", ""))
+PAYPAL_CLIENT_SECRET = clean_env(os.getenv("PAYPAL_CLIENT_SECRET", ""))
+PAYPAL_BASE_URL = clean_env(os.getenv("PAYPAL_BASE_URL", "https://api-m.sandbox.paypal.com"))
 
 
 class PayPalClient:
     """PayPal Sandbox API client for dispute arbitration and recovery invoicing."""
 
     def __init__(self, client_id: str = None, client_secret: str = None, base_url: str = None):
-        self.client_id = client_id or PAYPAL_CLIENT_ID
-        self.client_secret = client_secret or PAYPAL_CLIENT_SECRET
-        self.base_url = (base_url or PAYPAL_BASE_URL).rstrip("/")
+        self.client_id = clean_env(client_id or PAYPAL_CLIENT_ID)
+        self.client_secret = clean_env(client_secret or PAYPAL_CLIENT_SECRET)
+        self.base_url = clean_env(base_url or PAYPAL_BASE_URL).rstrip("/")
         self._access_token = None
 
     def get_access_token(self) -> str:
